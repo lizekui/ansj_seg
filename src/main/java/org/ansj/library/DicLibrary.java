@@ -1,8 +1,12 @@
 package org.ansj.library;
 
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -10,6 +14,12 @@ import java.util.Set;
 import org.ansj.dic.PathToStream;
 import org.ansj.domain.KV;
 import org.ansj.util.MyStaticValue;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.nlpcn.commons.lang.tire.domain.Forest;
 import org.nlpcn.commons.lang.tire.domain.Value;
 import org.nlpcn.commons.lang.tire.library.Library;
@@ -29,6 +39,9 @@ public class DicLibrary {
 	public static final Integer DEFAULT_FREQ = 1000;
 
 	public static final String DEFAULT_FREQ_STR = "1000";
+	
+	// 记录上次发送请求时的远端自定义词典的快照 ADD by zkli
+	public static List<String> previousRemoteDict = new ArrayList<>();
 
 	// 用户自定义词典
 	private static final Map<String, KV<String, Forest>> DIC = new HashMap<>();
@@ -48,6 +61,108 @@ public class DicLibrary {
 
 	}
 
+	/**
+	 * 如果确定远端词典有更新，则加载远程扩展词典到主词库表
+	 * ADD by zkli
+	 */
+	public static void loadRemoteExtDict(String location) {
+		LOG.info("[Dict Loading] " + location);
+		List<String> currentRemoteDict = getRemoteWords(location);
+		// 如果找不到扩展的字典，则忽略
+		if (currentRemoteDict == null) {
+			LOG.error("[Dict Loading] " + location + "加载失败");
+		}
+		
+		// 判定此次修改哪些是增加的，哪些是删除的（修改可视为先删除，后增加）
+		List<String> addRemoteDict = new ArrayList<>();
+		List<String> delRemoteDict = new ArrayList<>();
+		compareBetweenRemoteDictState(currentRemoteDict, addRemoteDict, delRemoteDict);
+		
+		for (String theWord : addRemoteDict) {
+			if (theWord != null && !"".equals(theWord.trim())) {
+				// 加载扩展词典数据到主内存词典中
+				LOG.info("ADD " + theWord);
+				DicLibrary.insert(DicLibrary.DEFAULT, theWord, "userDefine", 1000);
+			}
+		}
+		for (String theWord : delRemoteDict) {
+			if (theWord != null && !"".equals(theWord.trim())) {
+				// 加载扩展词典数据到主内存词典中
+				LOG.info("DEL " + theWord);
+				DicLibrary.delete(DicLibrary.DEFAULT, theWord);
+			}
+		}
+		
+		previousRemoteDict.clear();
+		previousRemoteDict.addAll(currentRemoteDict);
+	}
+	
+	/**
+	 * 判定此次修改哪些是增加的，哪些是删除的（修改可视为先删除，后增加）
+	 * @param currentRemoteDict
+	 * @param addRemoteDict
+	 * @param delRemoteDict
+	 */
+	private static void compareBetweenRemoteDictState(List<String> currentRemoteDict, List<String> addRemoteDict,
+			List<String> delRemoteDict) {
+		List tmp = new ArrayList();
+		tmp.addAll(previousRemoteDict);
+		// 删了哪些词语
+		tmp.removeAll(currentRemoteDict);
+		delRemoteDict.addAll(tmp);
+
+		tmp.clear();
+		tmp.addAll(currentRemoteDict);
+		// 增加了哪些词语
+		tmp.removeAll(previousRemoteDict);
+		addRemoteDict.addAll(tmp);
+	}
+
+	/**
+	 * 如果确定远端词典有更新，
+	 * 从远程服务器上，通过HTTP请求的方法下载自定义词条
+	 * ADD by zkli
+	 */
+	private static List<String> getRemoteWords(String location) {
+
+		List<String> buffer = new ArrayList<String>();
+		RequestConfig rc = RequestConfig.custom().setConnectionRequestTimeout(10 * 1000).setConnectTimeout(10 * 1000)
+				.setSocketTimeout(60 * 1000).build();
+		CloseableHttpClient httpclient = HttpClients.createDefault();
+		CloseableHttpResponse response;
+		BufferedReader in;
+		HttpGet get = new HttpGet(location);
+		get.setConfig(rc);
+		try {
+			response = httpclient.execute(get);
+			if (response.getStatusLine().getStatusCode() == 200) {
+
+				String charset = "UTF-8";
+				// 获取编码，默认为utf-8
+				if (response.getEntity().getContentType().getValue().contains("charset=")) {
+					String contentType = response.getEntity().getContentType().getValue();
+					charset = contentType.substring(contentType.lastIndexOf("=") + 1);
+				}
+				in = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), charset));
+				String line;
+				while ((line = in.readLine()) != null) {
+					buffer.add(line);
+				}
+				in.close();
+				response.close();
+				return buffer;
+			}
+			response.close();
+		} catch (ClientProtocolException e) {
+			LOG.error("getRemoteWords "+location+" error", e);
+		} catch (IllegalStateException e) {
+			LOG.error("getRemoteWords "+location+" error", e);
+		} catch (IOException e) {
+			LOG.error("getRemoteWords "+location+" error", e);
+		}
+		return buffer;
+	}
+	
 	/**
 	 * 关键词增加
 	 *

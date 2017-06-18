@@ -51,6 +51,12 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- 由于要定时与RemoteDict发送请求，所以需要加入这个包 ADD by zkli -->
+		<dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.2</version>
+        </dependency>
 
 	</dependencies>
 
