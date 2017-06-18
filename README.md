@@ -25,14 +25,18 @@ Ansj中文分词(词库可热更新版)
 
 2. 启动主程序分析
 * 分析“明月几时有，把酒问青天”
+
 ![screenshot02](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot2.png)
 
 3. 词典增删改效果
 * 将“问青天”从远端词库删掉
+
 ![screenshot03](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot3.png)
 * 将“问青天”从远端词库增加
+
 ![screenshot04](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot4.png)
 * 将“问青天”修改为“问青”，由于不符合语言学模型，所以修改无效果
+
 ![screenshot05](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot5.png)
 
 ## 涉及到的源码
