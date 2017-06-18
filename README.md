@@ -10,7 +10,7 @@ Ansj中文分词(词库可热更新版)
 * [Ansj项目repo](https://github.com/NLPchina/ansj_seg)
 
 ## 研究思路
-![dataflow overview](http://7xlhxb.com1.z0.glb.clouddn.com/dataflow.png)
+![dataflow overview](http://7xlhxb.com1.z0.glb.clouddn.com/dataflow%28resize%29.png)
 
 ## 实现步骤
 1. 在远程服务器Tomcat上部署词典文件
@@ -21,6 +21,7 @@ Ansj中文分词(词库可热更新版)
 
 ## 实验截图
 1. 远程词典初始内容
+
 ![screenshot01](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot1.png)
 
 2. 启动主程序分析
@@ -31,7 +32,7 @@ Ansj中文分词(词库可热更新版)
 3. 词典增删改效果
 * 将“问青天”从远端词库删掉
 
-![screenshot03](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot3.png)
+![screenshot03](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot3%28resize%29.png)
 * 将“问青天”从远端词库增加
 
 ![screenshot04](http://7xlhxb.com1.z0.glb.clouddn.com/screenshot4.png)
